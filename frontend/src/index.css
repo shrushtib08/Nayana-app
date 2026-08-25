@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Respect reduced-motion preferences everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Always-visible keyboard focus ring — critical for accessibility. */
+  :focus-visible {
+    outline: 3px solid #f4a623;
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+}
+
+@layer components {
+  /* Easy Mode / Elderly Mode: scales up all text and targets app-wide. */
+  .easy-mode {
+    font-size: 1.2rem;
+  }
+  .easy-mode button,
+  .easy-mode a {
+    min-height: 56px;
+  }
+
+  /* High-contrast mode: pure black/white, thicker borders, no soft shadows. */
+  .high-contrast {
+    --tw-shadow: none !important;
+  }
+  .high-contrast body,
+  .high-contrast {
+    background: #000 !important;
+    color: #fff !important;
+  }
+  .high-contrast .hc-surface {
+    background: #000 !important;
+    color: #fff !important;
+    border: 2px solid #fff !important;
+  }
+  .high-contrast .hc-accent {
+    background: #ffd400 !important;
+    color: #000 !important;
+    border: 2px solid #000 !important;
+  }
+}

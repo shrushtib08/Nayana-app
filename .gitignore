@@ -1,0 +1,34 @@
+# Environment
+.env
+.env.local
+
+# Python / Django
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.local
+
+# Android / Capacitor
+frontend/android/.gradle/
+frontend/android/.gradle_home/
+frontend/android/app/build/
+frontend/android/temp_android/
+frontend/android/local.properties
+frontend/android/capacitor-cordova-android-plugins/
+*.apk
+*.aab
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.log

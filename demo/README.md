@@ -1,0 +1,1 @@
+Sample images for demo mode would go here (medicine.jpg, government_notice.jpg, rental_agreement.jpg, bus_sign.jpg, textbook_page.jpg). Demo Mode currently ships with structured JSON responses in frontend/src/services/demoData.ts, which don't require actual image files to run.
