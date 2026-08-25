@@ -111,4 +111,6 @@ class GoogleLoginView(APIView):
         except ValueError as e:
             return Response({"detail": f"Invalid token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"detail": "Authentication failed."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            import traceback
+            print(traceback.format_exc())
+            return Response({"detail": f"Server error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
