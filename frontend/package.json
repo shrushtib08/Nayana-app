@@ -22,7 +22,8 @@
     "@capacitor/core": "^6.1.2",
     "@capacitor/android": "^6.1.2",
     "@capacitor/camera": "^6.0.2",
-    "@capacitor/preferences": "^6.0.2"
+    "@capacitor/preferences": "^6.0.2",
+    "@codetrix-studio/capacitor-google-auth": "^3.3.6"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2",

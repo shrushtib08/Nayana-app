@@ -14,3 +14,4 @@ anthropic==0.34.2
 openai==1.42.0
 google-cloud-vision==3.7.4
 pytesseract==0.3.13
+google-auth==2.33.0

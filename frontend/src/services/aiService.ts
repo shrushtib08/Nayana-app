@@ -1,7 +1,7 @@
 import { AnalysisResult, Category, DocumentQuestion, LanguageCode } from "../types";
 import { getDemoSample } from "./demoData";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://nayana-api.onrender.com/api";
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 /**

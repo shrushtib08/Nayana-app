@@ -17,6 +17,9 @@ SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-key-change-me")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
+# Trust Render's proxy for HTTPS detection
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -124,6 +127,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ---------------------------------------------------------------------------
 # Nayana-specific settings
 # ---------------------------------------------------------------------------
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 AI_PROVIDER = os.getenv("AI_PROVIDER", "demo")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
