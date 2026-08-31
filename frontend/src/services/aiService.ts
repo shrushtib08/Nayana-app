@@ -1,5 +1,6 @@
 import { AnalysisResult, Category, DocumentQuestion, LanguageCode } from "../types";
 import { getDemoSample } from "./demoData";
+import { auth } from "./firebase";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://nayana-api.onrender.com/api";
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
@@ -12,15 +13,26 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
  * always remains demonstrable.
  */
 class FrontendAIService {
+  private async getHeaders() {
+    const headers: any = { "Content-Type": "application/json" };
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   async analyzeImage(imageDataUrl: string, language: LanguageCode): Promise<AnalysisResult> {
     if (DEMO_MODE) {
       return this.simulateNetworkDelay(this.classifyDemoImage(imageDataUrl, language));
     }
 
     try {
+      const headers = await this.getHeaders();
       const response = await fetch(`${API_BASE_URL}/analyze/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ image: imageDataUrl, language })
       });
 
@@ -44,9 +56,10 @@ class FrontendAIService {
     }
 
     try {
+      const headers = await this.getHeaders();
       const response = await fetch(`${API_BASE_URL}/ask-document/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ scan_id: resultId, question })
       });
       if (!response.ok) throw new Error("ask-document failed");

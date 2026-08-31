@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+// @ts-ignore
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup } from "firebase/auth";
+import { auth, isFirebaseConfigured } from "../services/firebase";
+import { Capacitor } from "@capacitor/core";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://nayana-api.onrender.com/api";
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
-
-const TOKEN_KEY = "nayana_auth_token";
-const USER_KEY = "nayana_auth_user";
 
 export interface NayanaUser {
   email: string;
+  uid: string;
 }
 
 interface AuthContextValue {
@@ -20,7 +21,9 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  getAuthHeader: () => Promise<{ Authorization: string } | {}>;
+  isConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -32,34 +35,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initialize Google Auth
-    try {
-      (GoogleAuth as any).initialize();
-    } catch (e) {
-      console.error("Google Auth init failed", e);
+    if (!isFirebaseConfigured) {
+      setIsLoading(false);
+      return;
     }
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-    if (token && storedUser) {
+    // Initialize Google Auth for Capacitor
+    if (Capacitor.isNativePlatform()) {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        (GoogleAuth as any).initialize();
+      } catch (e) {
+        console.error("Google Auth init failed", e);
       }
     }
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: any) => {
+      if (firebaseUser) {
+        setUser({
+          email: firebaseUser.email || "",
+          uid: firebaseUser.uid
+        });
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
 
     // Ping server to wake up Render free tier
     pingServer();
 
-    setIsLoading(false);
+    return () => unsubscribe();
   }, []);
 
   async function pingServer() {
     setIsWakingUp(true);
     try {
-      // Just a simple HEAD request or a specific ping endpoint if available
       await fetch(`${API_BASE_URL.replace("/api", "")}/`, { method: "HEAD", mode: "no-cors" });
     } catch (e) {
       console.warn("Ping failed, server might still be cold.", e);
@@ -68,98 +78,97 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function callBackend(endpoint: string, payload: any) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/${endpoint}/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
-
-      if (!response.ok) {
-        throw new Error(data.detail || `Server error (${response.status}). Please try again later.`);
-      }
-      return data;
-    } catch (err) {
-      if (err instanceof TypeError && err.message === "Failed to fetch") {
-        throw new Error("Connection failed. The server might be waking up or your internet is down. Please wait 30 seconds and try again.");
-      }
-      throw err;
+  async function getAuthHeader() {
+    if (!isFirebaseConfigured) {
+      // Return a demo token so the app still works even without Firebase keys
+      return { Authorization: `Bearer nayana_demo_token` };
     }
-  }
-
-  function persistSession(token: string, email: string) {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify({ email }));
-    setUser({ email });
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const token = await currentUser.getIdToken();
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
   }
 
   async function login(email: string, password: string) {
     setError(null);
-    if (DEMO_MODE) {
-      if (!email.includes("@") || password.length < 4) {
-        throw new Error("Please enter a valid email and password.");
-      }
-      persistSession(`demo-${btoa(email)}`, email);
+    if (!isFirebaseConfigured) {
+      // Automatic Login for Demo Purposes if Firebase is missing
+      persistSession("nayana_demo_token", email);
       return;
     }
     try {
-      const data = await callBackend("login", { email, password });
-      persistSession(data.token, email);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      setError(err.message || "Login failed.");
       throw err;
     }
   }
 
   async function loginWithGoogle() {
     setError(null);
+    if (!isFirebaseConfigured) {
+      throw new Error("Firebase is not configured. Please add your Firebase keys to the .env file.");
+    }
     try {
-      const googleUser = await GoogleAuth.signIn();
-      const data = await callBackend("google", { token: googleUser.authentication.idToken });
-      persistSession(data.token, data.email);
-    } catch (err) {
-      if ((err as any).message === "User cancelled.") return;
-      setError(err instanceof Error ? err.message : "Google login failed.");
+      if (Capacitor.isNativePlatform()) {
+        const googleUser = await GoogleAuth.signIn();
+        const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+        await signInWithCredential(auth, credential);
+      } else {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      }
+    } catch (err: any) {
+      if (err.message === "User cancelled.") return;
+      setError(err.message || "Google login failed.");
       throw err;
     }
   }
 
   async function signup(email: string, password: string) {
     setError(null);
-    if (DEMO_MODE) {
-      if (!email.includes("@") || password.length < 8) {
-        throw new Error("Password must be at least 8 characters.");
-      }
-      persistSession(`demo-${btoa(email)}`, email);
-      return;
+    if (!isFirebaseConfigured) {
+      throw new Error("Firebase is not configured. Please add your Firebase keys to the .env file.");
     }
     try {
-      const data = await callBackend("register", { email, password });
-      persistSession(data.token, email);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed.");
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (err: any) {
+      setError(err.message || "Signup failed.");
       throw err;
     }
   }
 
-  function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
-    GoogleAuth.signOut().catch(() => {});
+  async function logout() {
+    try {
+      if (isFirebaseConfigured) {
+        await signOut(auth);
+      }
+      if (Capacitor.isNativePlatform()) {
+        await GoogleAuth.signOut().catch(() => {});
+      }
+      setUser(null);
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, isLoading, isWakingUp, error, login, loginWithGoogle, signup, logout }}
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        isWakingUp,
+        error,
+        login,
+        loginWithGoogle,
+        signup,
+        logout,
+        getAuthHeader,
+        isConfigured: isFirebaseConfigured
+      }}
     >
       {children}
     </AuthContext.Provider>
