@@ -30,23 +30,8 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             return None
 
         try:
-            # Check for a "Demo Token" for quick testing without Firebase keys
-            if id_token == "nayana_demo_token":
-                user, _ = User.objects.get_or_create(
-                    email="demo@nayana.app",
-                    defaults={"username": "demouser", "is_active": True}
-                )
-                return (user, None)
-
             decoded_token = auth.verify_id_token(id_token)
         except Exception as e:
-            # If Firebase is not initialized (missing keys), allow the demo token
-            if not firebase_admin._apps and id_token == "nayana_demo_token":
-                user, _ = User.objects.get_or_create(
-                    email="demo@nayana.app",
-                    defaults={"username": "demouser", "is_active": True}
-                )
-                return (user, None)
             raise exceptions.AuthenticationFailed(f"Invalid Firebase token: {str(e)}")
 
         uid = decoded_token.get("uid")

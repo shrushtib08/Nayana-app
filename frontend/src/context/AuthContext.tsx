@@ -79,10 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function getAuthHeader() {
-    if (!isFirebaseConfigured) {
-      // Return a demo token so the app still works even without Firebase keys
-      return { Authorization: `Bearer nayana_demo_token` };
-    }
+    if (!isFirebaseConfigured) return {};
     const currentUser = auth.currentUser;
     if (currentUser) {
       const token = await currentUser.getIdToken();
@@ -94,9 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(email: string, password: string) {
     setError(null);
     if (!isFirebaseConfigured) {
-      // Automatic Login for Demo Purposes if Firebase is missing
-      persistSession("nayana_demo_token", email);
-      return;
+      throw new Error("Firebase is not configured. Please add your Firebase keys to the .env file.");
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);

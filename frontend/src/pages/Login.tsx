@@ -19,7 +19,29 @@ export default function Login() {
 
   const redirectTo = (location.state as { from?: string })?.from || "/home";
 
-  // Removed the "Configuration Required" screen to allow zero-config login for the user.
+  if (!isConfigured && !DEMO_MODE) {
+    return (
+      <div className="min-h-screen bg-paper dark:bg-night-bg flex flex-col items-center justify-center px-6">
+        <div className="bg-marigold/10 border-2 border-marigold p-8 rounded-2xl max-w-sm text-center shadow-xl">
+          <div className="w-16 h-16 bg-marigold rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-ink mb-2">Firebase Required</h1>
+          <p className="text-ink/70 mb-6">
+            To allow any email to sign in securely, you must add your <b>Firebase API Keys</b> to the Render dashboard.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-marigold text-ink font-bold py-3 rounded-xl shadow-soft active:scale-95 transition-all"
+          >
+            Check again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function handleGoogleLogin() {
     setError(null);
